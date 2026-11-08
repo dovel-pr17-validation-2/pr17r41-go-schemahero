@@ -1,0 +1,78 @@
+package schemaherokubectlcli
+
+import (
+	"fmt"
+	"os"
+	"strings"
+
+	"github.com/schemahero/schemahero/pkg/config"
+	"github.com/schemahero/schemahero/pkg/database/plugin"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+)
+
+func RootCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:           "schemahero",
+		Short:         "SchemaHero is a cloud-native database schema management tool",
+		Long:          `...`,
+		SilenceErrors: true,
+		PreRun: func(cmd *cobra.Command, args []string) {
+			viper.BindPFlags(cmd.Flags())
+		},
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.Help()
+			os.Exit(1)
+		},
+	}
+
+	cobra.OnInitialize(initConfig)
+
+	config.AddFlags(cmd.PersistentFlags())
+
+	cmd.AddCommand(Version())
+	cmd.AddCommand(InstallCmd())
+	cmd.AddCommand(ShellCmd())
+	cmd.AddCommand(GetCmd())
+	cmd.AddCommand(DescribeCmd())
+	cmd.AddCommand(ApproveCmd())
+	cmd.AddCommand(RecalculateCmd())
+	cmd.AddCommand(RejectCmd())
+	cmd.AddCommand(GenerateCmd())
+	cmd.AddCommand(FixturesCmd())
+	cmd.AddCommand(PluginCmd())
+
+	cmd.AddCommand(PlanCmd())
+	cmd.AddCommand(ApplyCmd())
+
+	viper.BindPFlags(cmd.Flags())
+
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+
+	return cmd
+}
+
+func InitAndExecute() {
+	// Ensure plugin processes are cleaned up on exit
+	defer func() {
+		if pluginManager := plugin.GetGlobalPluginManager(); pluginManager != nil {
+			pluginManager.Cleanup()
+		}
+	}()
+
+	if err := RootCmd().Execute(); err != nil {
+		if message, ok := plugin.DownloadErrorMessage(err); ok {
+			fmt.Fprintf(os.Stderr, "%s\n\n", message)
+		}
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+func initConfig() {
+	viper.SetEnvPrefix("SCHEMAHERO")
+	viper.AutomaticEnv()
+
+	// Initialize the plugin system globally
+	plugin.InitializePluginSystem()
+}

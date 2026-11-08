@@ -1,0 +1,593 @@
+name: "Tagged release"
+on:
+  push:
+    tags: ["*"]
+
+env:
+  REGISTRY: docker.io
+  REGISTRY_NAMESPACE: schemahero
+
+jobs:
+  # Determine which plugins changed
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      postgres: ${{ steps.filter.outputs.postgres }}
+      mysql: ${{ steps.filter.outputs.mysql }}
+      timescaledb: ${{ steps.filter.outputs.timescaledb }}
+      sqlite: ${{ steps.filter.outputs.sqlite }}
+      rqlite: ${{ steps.filter.outputs.rqlite }}
+      cassandra: ${{ steps.filter.outputs.cassandra }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            postgres:
+              - 'plugins/postgres/**'
+              - '.github/workflows/tagged-release.yaml'
+            mysql:
+              - 'plugins/mysql/**'
+              - '.github/workflows/tagged-release.yaml'
+            timescaledb:
+              - 'plugins/timescaledb/**'
+              - '.github/workflows/tagged-release.yaml'
+            sqlite:
+              - 'plugins/sqlite/**'
+              - '.github/workflows/tagged-release.yaml'
+            rqlite:
+              - 'plugins/rqlite/**'
+              - '.github/workflows/tagged-release.yaml'
+            cassandra:
+              - 'plugins/cassandra/**'
+              - '.github/workflows/tagged-release.yaml'
+
+  # PostgreSQL Plugin
+  build-postgres:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Get plugin version
+        id: version
+        run: echo "VERSION=$(cat plugins/postgres/VERSION)" >> $GITHUB_OUTPUT
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+          cache-dependency-path: plugins/postgres/go.sum
+
+      - name: Build and push
+        uses: ./.github/actions/build-plugin
+        with:
+          plugin_name: postgres
+          plugin_version: ${{ steps.version.outputs.VERSION }}
+          platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
+          registry: ${{ env.REGISTRY }}
+          registry_namespace: ${{ env.REGISTRY_NAMESPACE }}
+          dockerhub_username: schemahero
+          dockerhub_token: ${{ secrets.DOCKER_OAT }}
+          push: true
+
+  # MySQL Plugin
+  build-mysql:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Get plugin version
+        id: version
+        run: echo "VERSION=$(cat plugins/mysql/VERSION)" >> $GITHUB_OUTPUT
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+          cache-dependency-path: plugins/mysql/go.sum
+
+      - name: Build and push
+        uses: ./.github/actions/build-plugin
+        with:
+          plugin_name: mysql
+          plugin_version: ${{ steps.version.outputs.VERSION }}
+          platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
+          registry: ${{ env.REGISTRY }}
+          registry_namespace: ${{ env.REGISTRY_NAMESPACE }}
+          dockerhub_username: schemahero
+          dockerhub_token: ${{ secrets.DOCKER_OAT }}
+          push: true
+
+  # TimescaleDB Plugin
+  build-timescaledb:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Get plugin version
+        id: version
+        run: echo "VERSION=$(cat plugins/timescaledb/VERSION)" >> $GITHUB_OUTPUT
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+          cache-dependency-path: plugins/timescaledb/go.sum
+
+      - name: Build and push
+        uses: ./.github/actions/build-plugin
+        with:
+          plugin_name: timescaledb
+          plugin_version: ${{ steps.version.outputs.VERSION }}
+          platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
+          registry: ${{ env.REGISTRY }}
+          registry_namespace: ${{ env.REGISTRY_NAMESPACE }}
+          dockerhub_username: schemahero
+          dockerhub_token: ${{ secrets.DOCKER_OAT }}
+          push: true
+
+  # SQLite Plugin
+  build-sqlite:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Get plugin version
+        id: version
+        run: echo "VERSION=$(cat plugins/sqlite/VERSION)" >> $GITHUB_OUTPUT
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+          cache-dependency-path: plugins/sqlite/go.sum
+
+      - name: Build and push
+        uses: ./.github/actions/build-plugin
+        with:
+          plugin_name: sqlite
+          plugin_version: ${{ steps.version.outputs.VERSION }}
+          platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
+          registry: ${{ env.REGISTRY }}
+          registry_namespace: ${{ env.REGISTRY_NAMESPACE }}
+          dockerhub_username: schemahero
+          dockerhub_token: ${{ secrets.DOCKER_OAT }}
+          push: true
+
+  # RQLite Plugin
+  build-rqlite:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Get plugin version
+        id: version
+        run: echo "VERSION=$(cat plugins/rqlite/VERSION)" >> $GITHUB_OUTPUT
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+          cache-dependency-path: plugins/rqlite/go.sum
+
+      - name: Build and push
+        uses: ./.github/actions/build-plugin
+        with:
+          plugin_name: rqlite
+          plugin_version: ${{ steps.version.outputs.VERSION }}
+          platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
+          registry: ${{ env.REGISTRY }}
+          registry_namespace: ${{ env.REGISTRY_NAMESPACE }}
+          dockerhub_username: schemahero
+          dockerhub_token: ${{ secrets.DOCKER_OAT }}
+          push: true
+
+  # Cassandra Plugin
+  build-cassandra:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Get plugin version
+        id: version
+        run: echo "VERSION=$(cat plugins/cassandra/VERSION)" >> $GITHUB_OUTPUT
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+          cache-dependency-path: plugins/cassandra/go.sum
+
+      - name: Build and push
+        uses: ./.github/actions/build-plugin
+        with:
+          plugin_name: cassandra
+          plugin_version: ${{ steps.version.outputs.VERSION }}
+          platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
+          registry: ${{ env.REGISTRY }}
+          registry_namespace: ${{ env.REGISTRY_NAMESPACE }}
+          dockerhub_username: schemahero
+          dockerhub_token: ${{ secrets.DOCKER_OAT }}
+          push: true
+  build:
+    runs-on: ubuntu-latest
+    needs: [build-postgres, build-mysql, build-timescaledb, build-sqlite, build-rqlite, build-cassandra]
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+          cache-dependency-path: ./go.sum
+
+      - run: make fmt
+      - run: go mod tidy
+      - run: git diff
+      - run: make vet manifests bin/kubectl-schemahero manager test
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: manager
+          path: bin/manager
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: kubectl-schemahero
+          path: bin/kubectl-schemahero
+
+  test-postgres:
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      matrix:
+        postgres_version: ["14.20", "15.15", "16.11", "17.7", "18.1"]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+      - name: Download kubectl-schemahero binary
+        uses: actions/download-artifact@v8.0.1
+        with:
+          name: kubectl-schemahero
+          path: bin/
+      - run: chmod +x bin/kubectl-schemahero
+      - name: Build postgres plugin
+        run: |
+          mkdir -p $HOME/.schemahero/plugins
+          cd plugins/postgres
+          go build -o $HOME/.schemahero/plugins/schemahero-postgres .
+          chmod +x $HOME/.schemahero/plugins/schemahero-postgres
+      - run: make -C integration/tests/postgres ${{matrix.postgres_version}}
+
+  test-mysql:
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      matrix:
+        mysql_version: ["8.0.45", "8.4.8", "9.5.2"]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+      - name: Download kubectl-schemahero binary
+        uses: actions/download-artifact@v8.0.1
+        with:
+          name: kubectl-schemahero
+          path: bin/
+      - run: chmod +x bin/kubectl-schemahero
+      - name: Build mysql plugin
+        run: |
+          mkdir -p $HOME/.schemahero/plugins
+          cd plugins/mysql
+          go build -o $HOME/.schemahero/plugins/schemahero-mysql .
+          chmod +x $HOME/.schemahero/plugins/schemahero-mysql
+      - run: make -C integration/tests/mysql ${{matrix.mysql_version}}
+
+  test-cockroach:
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      matrix:
+        cockroachdb_version: ["v24.3.25", "v25.2.11", "v25.4.3"]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+      - name: Download kubectl-schemahero binary
+        uses: actions/download-artifact@v8.0.1
+        with:
+          name: kubectl-schemahero
+          path: bin/
+      - run: chmod +x bin/kubectl-schemahero
+      - name: Build postgres plugin (cockroach uses postgres plugin)
+        run: |
+          mkdir -p $HOME/.schemahero/plugins
+          cd plugins/postgres
+          go build -o $HOME/.schemahero/plugins/schemahero-postgres .
+          chmod +x $HOME/.schemahero/plugins/schemahero-postgres
+      - run: make -C integration/tests/cockroach ${{matrix.cockroachdb_version}}
+
+  test-cassandra:
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      matrix:
+        cassandra_version: ["4.0.19", "4.1.10", "5.0.6"]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+      - name: Download kubectl-schemahero binary
+        uses: actions/download-artifact@v8.0.1
+        with:
+          name: kubectl-schemahero
+          path: bin/
+      - run: chmod +x bin/kubectl-schemahero
+      - name: Build cassandra plugin
+        run: |
+          mkdir -p $HOME/.schemahero/plugins
+          cd plugins/cassandra
+          go build -o $HOME/.schemahero/plugins/schemahero-cassandra .
+          chmod +x $HOME/.schemahero/plugins/schemahero-cassandra
+      - run: make -C integration/tests/cassandra ${{matrix.cassandra_version}}
+
+  test-sqlite:
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      matrix:
+        sqlite_version: ["3.51.2"]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+      - name: Download kubectl-schemahero binary
+        uses: actions/download-artifact@v8.0.1
+        with:
+          name: kubectl-schemahero
+          path: bin/
+      - run: chmod +x bin/kubectl-schemahero
+      - name: Build sqlite plugin
+        run: |
+          mkdir -p $HOME/.schemahero/plugins
+          cd plugins/sqlite
+          go build -o $HOME/.schemahero/plugins/schemahero-sqlite .
+          chmod +x $HOME/.schemahero/plugins/schemahero-sqlite
+      - run: make -C integration/tests/sqlite ${{matrix.sqlite_version}}
+
+  test-rqlite:
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      matrix:
+        rqlite_version: ["8.36.8", "9.3.18"]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+      - name: Download kubectl-schemahero binary
+        uses: actions/download-artifact@v8.0.1
+        with:
+          name: kubectl-schemahero
+          path: bin/
+      - run: chmod +x bin/kubectl-schemahero
+      - name: Build rqlite plugin
+        run: |
+          mkdir -p $HOME/.schemahero/plugins
+          cd plugins/rqlite
+          go build -o $HOME/.schemahero/plugins/schemahero-rqlite .
+          chmod +x $HOME/.schemahero/plugins/schemahero-rqlite
+      - run: make -C integration/tests/rqlite ${{matrix.rqlite_version}}
+
+  test-timescaledb:
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      matrix:
+        timescaledb_version: ["2.25.0-pg17"]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+      - name: Download kubectl-schemahero binary
+        uses: actions/download-artifact@v8.0.1
+        with:
+          name: kubectl-schemahero
+          path: bin/
+      - run: chmod +x bin/kubectl-schemahero
+      - name: Build timescaledb plugin
+        run: |
+          mkdir -p $HOME/.schemahero/plugins
+          cd plugins/timescaledb
+          go build -o $HOME/.schemahero/plugins/schemahero-timescaledb .
+          chmod +x $HOME/.schemahero/plugins/schemahero-timescaledb
+      - run: make -C integration/tests/timescaledb ${{matrix.timescaledb_version}}
+
+  build-docker-manager:
+    runs-on: ubuntu-latest
+    needs:
+      - test-postgres
+      - test-mysql
+      - test-cockroach
+      - test-cassandra
+      - test-sqlite
+      - test-rqlite
+      - test-timescaledb
+    outputs:
+      digest: ${{ steps.release-manager.outputs.digest }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - id: get_version
+        uses: battila7/get-version-action@v2
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: schemaherodeploy
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      - name: Docker meta for manager
+        id: meta-manager
+        uses: docker/metadata-action@v6
+        with:
+          images: index.docker.io/schemahero/schemahero-manager
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable=${{ steps.get_version.outputs.prerelease == '' }}
+      - name: Build and push
+        id: release-manager
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: deploy/Dockerfile.multiarch
+          target: manager
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta-manager.outputs.tags }}
+          labels: ${{ steps.meta-manager.outputs.labels }}
+
+  build-docker-schemahero:
+    runs-on: ubuntu-latest
+    needs:
+      - test-postgres
+      - test-mysql
+      - test-cockroach
+      - test-cassandra
+      - test-sqlite
+      - test-rqlite
+      - test-timescaledb
+    outputs:
+      digest: ${{ steps.release-schemahero.outputs.digest }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - id: get_version
+        uses: battila7/get-version-action@v2
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: schemaherodeploy
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Docker meta for schemahero
+        id: meta-schemahero
+        uses: docker/metadata-action@v6
+        with:
+          images: index.docker.io/schemahero/schemahero
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable=${{ steps.get_version.outputs.prerelease == '' }}
+      - name: Build and push
+        id: release-schemahero
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: deploy/Dockerfile.multiarch
+          target: schemahero
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta-schemahero.outputs.tags }}
+          labels: ${{ steps.meta-schemahero.outputs.labels }}
+
+  github-release-tarballs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    needs:
+      - test-postgres
+      - test-mysql
+      - test-cockroach
+      - test-cassandra
+      - test-sqlite
+      - test-rqlite
+      - test-timescaledb
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+          cache-dependency-path: ./go.sum
+
+      - name: make release-tarballs
+        run: make release-tarballs VERSION="${GITHUB_REF_NAME#v}"
+
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$GITHUB_REF_NAME"
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" ./release/* --clobber
+          else
+            args=(--title "$tag")
+            if [[ "$tag" == *-* ]]; then
+              args+=(--prerelease)
+            fi
+            gh release create "$tag" ./release/* "${args[@]}"
+          fi
+
+  krew:
+    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, 'alpha') && !contains(github.ref, 'beta')
+    runs-on: ubuntu-latest
+    needs:
+      - github-release-tarballs
+      - build-docker-schemahero
+      - build-docker-manager
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Create new schemahero version in krew-index
+        uses: rajatjindal/krew-release-bot@v0.0.51
+        with:
+          krew_template_file: deploy/krew.yaml
+
+  homebrew:
+    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, 'alpha') && !contains(github.ref, 'beta')
+    runs-on: ubuntu-latest
+    needs:
+      - github-release-tarballs
+    steps:
+      - id: get_version
+        uses: battila7/get-version-action@v2
+      - name: Trigger homebrew-tap update
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          repository: schemahero/homebrew-tap
+          event-type: release
+          client-payload: '{"version": "${{ steps.get_version.outputs.version-without-v }}"}'

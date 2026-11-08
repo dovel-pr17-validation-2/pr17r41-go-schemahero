@@ -1,0 +1,118 @@
+/*
+Copyright 2019 The SchemaHero Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package v1alpha4
+
+import (
+	"crypto/sha256"
+	"fmt"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+// +kubebuilder:validation:Enum=PLANNED;APPROVED;EXECUTED;INVALID;REJECTED
+type Phase string
+
+const (
+	Planned  Phase = "PLANNED"
+	Approved Phase = "APPROVED"
+	Executed Phase = "EXECUTED"
+	Invalid  Phase = "INVALID"
+	Rejected Phase = "REJECTED"
+)
+
+// TableReference identifies a table that is part of a migration
+type TableReference struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
+// MigrationSpec defines the desired state of Migration
+type MigrationSpec struct {
+	DatabaseName   string `json:"databaseName,omitempty"`
+	TableName      string `json:"tableName"`
+	TableNamespace string `json:"tableNamespace"`
+	GeneratedDDL   string `json:"generatedDDL,omitempty"`
+	EditedDDL      string `json:"editedDDL,omitempty"`
+
+	// Tables contains references to all tables included in this migration.
+	// This is populated for batch migrations that include multiple tables.
+	// For single-table migrations, this may be empty (use TableName/TableNamespace).
+	Tables []TableReference `json:"tables,omitempty"`
+}
+
+// MigrationStatus defines the observed state of Migration
+type MigrationStatus struct {
+	Phase Phase `json:"phase,omitempty"`
+
+	// PlannedAt is the unix nano timestamp when the plan was generated
+	PlannedAt int64 `json:"plannedAt,omitempty"`
+
+	// InvalidatedAt is the unix nano timestamp when this plan was determined to be invalid or outdated
+	InvalidatedAt int64 `json:"invalidatedAt,omitempty"`
+
+	ApprovedAt int64 `json:"approvedAt,omitempty"`
+	RejectedAt int64 `json:"rejectedAt,omitempty"`
+	ExecutedAt int64 `json:"executedAt,omitempty"`
+
+	// PlanHash is a stable SHA-256 hash of the exact generated DDL in this plan.
+	PlanHash string `json:"planHash,omitempty"`
+
+	// ApprovedPlanHash is the plan hash that was approved. It must match PlanHash
+	// before the controller will execute the migration.
+	ApprovedPlanHash string `json:"approvedPlanHash,omitempty"`
+
+	// ApprovedBy records the actor that approved this migration.
+	ApprovedBy string `json:"approvedBy,omitempty"`
+
+	// RejectedBy records the actor that rejected this migration.
+	RejectedBy string `json:"rejectedBy,omitempty"`
+}
+
+// +genclient
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// Migration is the Schema for the migrations API
+// +kubebuilder:printcolumn:name="Database",type=string,JSONPath=`.spec.databaseName`
+// +kubebuilder:printcolumn:name="Table",type=string,JSONPath=`.spec.tableName`
+// +kubebuilder:printcolumn:name="Namespace",type=string,JSONPath=`.metadata.namespace`,priority=1
+// +kubebuilder:printcolumn:name="Phase",type=string,JSONPath=`.status.phase`
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+// +k8s:openapi-gen=true
+type Migration struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   MigrationSpec   `json:"spec,omitempty"`
+	Status MigrationStatus `json:"status,omitempty"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// MigrationList contains a list of Migration
+type MigrationList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []Migration `json:"items"`
+}
+
+func init() {
+	SchemeBuilder.Register(&Migration{}, &MigrationList{})
+}
+
+func PlanHashForDDL(generatedDDL string) string {
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(generatedDDL)))
+}
